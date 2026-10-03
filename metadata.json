@@ -1,0 +1,6 @@
+{
+  "name": "Emerald Chat",
+  "description": "A dark green global chat and social discovery messenger with real-time conversations, international user explore, and customizable profiles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
