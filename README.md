@@ -36,3 +36,10 @@ View your app in AI Studio: https://ai.studio/apps/88f2b2c3-a1d3-4908-ba08-662a5
 ## Hələ də demo səviyyəsindədir
 - Giriş/parol localStorage-dadır (real backend və hash yoxdur), mesajlar cihazlar arasında sinxron deyil.
 - Zənglər simulyasiyadır (WebRTC yoxdur).
+
+
+## Real backend (PostgreSQL)
+- Accounts (bcrypt-hashed passwords), sessions, chats and messages are stored in PostgreSQL via `server.ts` (`/api/*`).
+- Tables are created automatically on server start. Set `DATABASE_URL`.
+- The browser only keeps a login token and language/theme; the client polls the API for new messages.
+- The old simulated partners and `/api/reply` (Gemini) were removed because chats are now between real users.
