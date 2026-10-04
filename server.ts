@@ -455,7 +455,7 @@ async function listConversations(uid: string, onlyId?: string) {
     [uid]
   );
   const r = await pool!.query(
-    `SELECT c.id, c.updated_at AS conv_updated, m.is_pinned,
+    `SELECT c.id AS conv_id, c.updated_at AS conv_updated, m.is_pinned,
             ${USER_COLS},
             lm.id AS lm_id, lm.sender_id AS lm_sender_id, lm.sender_name AS lm_sender_name, lm.body AS lm_body,
             lm.status AS lm_status, lm.is_voice AS lm_is_voice, lm.created_at AS lm_created_at,
@@ -479,13 +479,13 @@ async function listConversations(uid: string, onlyId?: string) {
     onlyId ? [uid, onlyId] : [uid]
   );
   return r.rows.map((row: Row) => ({
-    id: row.id,
+    id: row.conv_id,
     participant: toUser(row),
     lastMessage: row.lm_id
       ? toMessage(
           {
             id: row.lm_id,
-            conversation_id: row.id,
+            conversation_id: row.conv_id,
             sender_id: row.lm_sender_id,
             sender_name: row.lm_sender_name,
             body: row.lm_body,
@@ -577,20 +577,23 @@ app.get(
 
     const since = Number(req.query.since);
     const incremental = Number.isFinite(since) && since > 0;
-    const r = await pool!.query(
-      incremental
-        ? `SELECT *, ($2 = ANY(deleted_for)) AS deleted FROM messages
-            WHERE conversation_id = $1 AND updated_at > to_timestamp($3 / 1000.0)
+    const r = incremental
+      ? await pool!.query(
+          `SELECT *, ($2 = ANY(deleted_for)) AS deleted FROM messages
+            WHERE conversation_id = $1 AND updated_at > to_timestamp($3::double precision / 1000.0)
               AND ($4::timestamptz IS NULL OR created_at > $4)
-            ORDER BY created_at LIMIT 500`
-        : `SELECT * FROM (
+            ORDER BY created_at LIMIT 500`,
+          [convId, me, since, mem.cleared_at]
+        )
+      : await pool!.query(
+          `SELECT * FROM (
              SELECT *, FALSE AS deleted FROM messages
               WHERE conversation_id = $1 AND NOT ($2 = ANY(deleted_for))
-                AND ($4::timestamptz IS NULL OR created_at > $4)
+                AND ($3::timestamptz IS NULL OR created_at > $3)
               ORDER BY created_at DESC LIMIT 500
            ) t ORDER BY created_at`,
-      incremental ? [convId, me, since, mem.cleared_at] : [convId, me, null, mem.cleared_at]
-    );
+          [convId, me, mem.cleared_at]
+        );
     res.json({ messages: r.rows.map((row: Row) => toMessage(row)), serverTime: Date.now() });
   })
 );
