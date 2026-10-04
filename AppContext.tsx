@@ -106,7 +106,7 @@ class ApiError extends Error {
 }
 
 async function api<T>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
-  const token = localStorage.getItem(TOKEN_KEY); // read synchronously, before any await
+  const token = sessionStorage.getItem(TOKEN_KEY); // read synchronously, before any await
   let res: Response;
   try {
     res = await fetch(`/api${path}`, {
@@ -246,13 +246,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const resetSession = () => {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     clearLocalState();
     setCurrentUser(null);
   };
 
   const startSession = (data: SessionPayload) => {
-    localStorage.setItem(TOKEN_KEY, data.token);
+    sessionStorage.setItem(TOKEN_KEY, data.token);
     clearLocalState();
     setSettings(data.settings);
     setCurrentUser(data.user);
@@ -262,7 +262,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!localStorage.getItem(TOKEN_KEY)) {
+      if (!sessionStorage.getItem(TOKEN_KEY)) {
         setAuthReady(true);
         return;
       }
@@ -272,7 +272,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSettings(me.settings);
         setCurrentUser(me.user);
       } catch (e) {
-        if (e instanceof ApiError && e.status === 401) localStorage.removeItem(TOKEN_KEY);
+        if (e instanceof ApiError && e.status === 401) sessionStorage.removeItem(TOKEN_KEY);
       }
       if (!cancelled) setAuthReady(true);
     })();
